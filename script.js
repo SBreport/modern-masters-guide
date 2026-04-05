@@ -2,10 +2,11 @@
 const chapters = ['intro', 'ch1', 'ch2', 'ch3', 'ch4', 'ch5', 'appendix', 'story'];
 const container = document.getElementById('chapters-container');
 
-// 스토리 → 용어사전 돌아가기 기능
+// 스토리 → 다른 탭 돌아가기 기능
 let storyScrollPos = 0;
 let cameFromStory = false;
-let currentStoryStage = 0; // 현재 열린 스토리 스테이지 번호
+let savedStoryStage = 0; // 돌아갈 때 복원할 스테이지
+let currentStoryStage = 0;
 
 async function loadChapters() {
   const results = await Promise.all(
@@ -28,7 +29,6 @@ async function loadChapters() {
   initStorySelect();
 }
 
-// 넓은 테이블을 스크롤 래퍼로 감싸기 (모바일 대응)
 function wrapTables() {
   container.querySelectorAll('.compare-table').forEach(table => {
     if (table.parentElement.classList.contains('table-scroll')) return;
@@ -57,12 +57,11 @@ function switchTab(chId, scrollTarget) {
   const chapter = document.getElementById(chId);
   if (chapter) chapter.classList.add('active');
 
-  // 스토리 탭으로 돌아올 때 스테이지 컨테이너 초기화
-  if (chId === 'story') {
+  // 스토리 탭으로 돌아올 때 (네비 클릭으로 직접 이동하는 경우만 허브 리셋)
+  if (chId === 'story' && !cameFromStory) {
     const stageContainer = document.getElementById('story-stage-container');
     if (stageContainer) stageContainer.innerHTML = '';
     currentStoryStage = 0;
-    // 허브 요소들 다시 표시
     showStoryHub(true);
   }
 
@@ -90,25 +89,22 @@ function switchTab(chId, scrollTarget) {
 function initStorySelect() {
   document.querySelectorAll('.stage-select-card').forEach(card => {
     card.addEventListener('click', () => {
-      const stageNum = card.dataset.story;
-      loadStoryStage(stageNum);
+      loadStoryStage(card.dataset.story).then(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
     });
   });
 }
 
-// 스토리 허브 요소 표시/숨김
 function showStoryHub(show) {
   const storyChapter = document.getElementById('story');
   if (!storyChapter) return;
-  const hubElements = storyChapter.querySelectorAll('.story-header, .story-header + .sub-desc, .story-header ~ p, h3, .story-characters, .stage-select');
-  // 직접 자식 중 stage-container가 아닌 것들을 제어
   Array.from(storyChapter.children).forEach(el => {
     if (el.id === 'story-stage-container') return;
     el.style.display = show ? '' : 'none';
   });
 }
 
-// 스테이지 로딩
 async function loadStoryStage(num) {
   const stageContainer = document.getElementById('story-stage-container');
   if (!stageContainer) return;
@@ -116,21 +112,15 @@ async function loadStoryStage(num) {
   try {
     const res = await fetch(`chapters/story-${num}.html`);
     const html = await res.text();
-
-    // 허브 요소 숨기기
     showStoryHub(false);
-
-    // 스테이지 내용 표시
     stageContainer.innerHTML = html;
     currentStoryStage = num;
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (e) {
     console.error('Failed to load story stage', e);
   }
 }
 
-// 스테이지에서 허브로 돌아가기 (글로벌 함수)
+// 스테이지에서 허브로 돌아가기
 window.closeStoryStage = function() {
   const stageContainer = document.getElementById('story-stage-container');
   if (stageContainer) stageContainer.innerHTML = '';
@@ -139,19 +129,26 @@ window.closeStoryStage = function() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-// 스토리 내 용어 링크 클릭 처리
+// 스토리 내 링크 클릭 처리 (용어사전 + 챕터 탭 모두 지원)
 function initTermLinks() {
   document.addEventListener('click', (e) => {
-    const link = e.target.closest('.term-link');
-    if (!link) return;
-    if (!link.dataset.term) return; // 안내 텍스트의 가짜 링크 무시
-    e.preventDefault();
+    // 용어사전 링크 (data-term)
+    const termLink = e.target.closest('.term-link[data-term]');
+    if (termLink) {
+      e.preventDefault();
+      saveStoryPosition();
+      switchTab('intro', termLink.dataset.term);
+      return;
+    }
 
-    const termId = link.dataset.term;
-    storyScrollPos = window.scrollY;
-    cameFromStory = true;
-
-    switchTab('intro', termId);
+    // 챕터 탭 링크 (data-ch, data-section)
+    const chLink = e.target.closest('.ch-link[data-ch]');
+    if (chLink) {
+      e.preventDefault();
+      saveStoryPosition();
+      switchTab(chLink.dataset.ch, chLink.dataset.section || null);
+      return;
+    }
   });
 
   // 돌아가기 버튼 생성
@@ -161,18 +158,41 @@ function initTermLinks() {
   backBtn.innerHTML = '← 스토리로 돌아가기';
   backBtn.style.display = 'none';
   backBtn.addEventListener('click', () => {
-    cameFromStory = false;
+    const savedPos = storyScrollPos;
+    const savedStage = savedStoryStage;
+
     backBtn.style.display = 'none';
-    switchTab('story');
-    // 스테이지가 열려있었으면 다시 로드
-    if (currentStoryStage > 0) {
-      setTimeout(() => {
-        loadStoryStage(currentStoryStage);
-        setTimeout(() => window.scrollTo({ top: storyScrollPos, behavior: 'smooth' }), 200);
-      }, 100);
+
+    // 스토리 탭으로 전환 (허브 리셋 방지를 위해 cameFromStory 이용)
+    cameFromStory = true;
+
+    // 탭 전환 (스크롤 없이)
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.chapter').forEach(c => c.classList.remove('active'));
+    const btn = document.querySelector('[data-ch="story"]');
+    if (btn) btn.classList.add('active');
+    const chapter = document.getElementById('story');
+    if (chapter) chapter.classList.add('active');
+
+    cameFromStory = false;
+
+    // 스테이지가 열려있었으면 다시 로드 후 스크롤 복원
+    if (savedStage > 0) {
+      loadStoryStage(savedStage).then(() => {
+        setTimeout(() => window.scrollTo(0, savedPos), 150);
+      });
+    } else {
+      setTimeout(() => window.scrollTo(0, savedPos), 100);
     }
   });
   document.body.appendChild(backBtn);
+}
+
+// 스토리 위치 저장
+function saveStoryPosition() {
+  storyScrollPos = window.scrollY;
+  savedStoryStage = currentStoryStage;
+  cameFromStory = true;
 }
 
 loadChapters();

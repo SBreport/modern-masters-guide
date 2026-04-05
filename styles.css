@@ -84,6 +84,7 @@ body {
   margin: 0 auto;
   gap: 0;
   scrollbar-width: none;
+  justify-content: center;
 }
 .nav::-webkit-scrollbar { display: none; }
 .nav-btn {
@@ -479,7 +480,7 @@ p { margin-bottom: 14px; color: var(--text); font-weight: 300; }
   border-bottom-color: #f0a0b0 !important;
 }
 
-/* 용어 링크 (스토리 내) */
+/* 용어 링크 (스토리 내 → 용어사전) */
 .term-link {
   color: var(--gold-light);
   text-decoration: none;
@@ -490,6 +491,24 @@ p { margin-bottom: 14px; color: var(--text); font-weight: 300; }
 .term-link:hover {
   color: var(--gold);
   border-bottom-color: var(--gold);
+}
+
+/* 챕터 링크 (스토리 내 → 챕터 탭 제품 상세+이미지) */
+.ch-link {
+  color: #7ecba1;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(126,203,161,0.5);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.ch-link:hover {
+  color: #a0e8c0;
+  border-bottom-color: #a0e8c0;
+}
+.ch-link::after {
+  content: ' 📷';
+  font-size: 0.75em;
+  opacity: 0.6;
 }
 
 /* 용어사전 하이라이트 */
