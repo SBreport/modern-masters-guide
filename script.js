@@ -158,32 +158,19 @@ function initTermLinks() {
   backBtn.innerHTML = '← 스토리로 돌아가기';
   backBtn.style.display = 'none';
   backBtn.addEventListener('click', () => {
-    const savedPos = storyScrollPos;
-    const savedStage = savedStoryStage;
-
     backBtn.style.display = 'none';
+    cameFromStory = false;
 
-    // 스토리 탭으로 전환 (허브 리셋 방지를 위해 cameFromStory 이용)
-    cameFromStory = true;
-
-    // 탭 전환 (스크롤 없이)
+    // 스토리 탭을 그대로 보여주기 (스테이지 콘텐츠는 DOM에 남아있으므로 re-fetch 불필요)
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.chapter').forEach(c => c.classList.remove('active'));
     const btn = document.querySelector('[data-ch="story"]');
     if (btn) btn.classList.add('active');
-    const chapter = document.getElementById('story');
-    if (chapter) chapter.classList.add('active');
+    const storyEl = document.getElementById('story');
+    if (storyEl) storyEl.classList.add('active');
 
-    cameFromStory = false;
-
-    // 스테이지가 열려있었으면 다시 로드 후 스크롤 복원
-    if (savedStage > 0) {
-      loadStoryStage(savedStage).then(() => {
-        setTimeout(() => window.scrollTo(0, savedPos), 150);
-      });
-    } else {
-      setTimeout(() => window.scrollTo(0, savedPos), 100);
-    }
+    // 저장된 위치로 복원
+    requestAnimationFrame(() => window.scrollTo(0, storyScrollPos));
   });
   document.body.appendChild(backBtn);
 }
