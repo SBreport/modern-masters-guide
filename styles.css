@@ -767,6 +767,40 @@ p { margin-bottom: 14px; color: var(--text); font-weight: 300; }
   color: var(--text);
 }
 
+/* ===== STAGE NAV (이전/목록/다음) ===== */
+.stage-nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 30px 0 10px;
+  flex-wrap: wrap;
+}
+.stage-nav-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.stage-nav-btn:hover {
+  background: var(--surface3);
+  color: var(--text);
+}
+.stage-nav-btn.stage-nav-next {
+  background: var(--gold-dark);
+  border-color: var(--gold-dark);
+  color: #fff;
+}
+.stage-nav-btn.stage-nav-next:hover {
+  background: var(--gold);
+  color: #111;
+}
+
 /* ===== TABLE SCROLL WRAPPER (모바일 테이블 가로 스크롤) ===== */
 .table-scroll {
   overflow-x: auto;

@@ -120,6 +120,13 @@ async function loadStoryStage(num) {
   }
 }
 
+// 스테이지 간 이동 (이전/다음)
+window.goToStoryStage = function(num) {
+  loadStoryStage(num).then(() => {
+    window.scrollTo(0, 0);
+  });
+};
+
 // 스테이지에서 허브로 돌아가기
 window.closeStoryStage = function() {
   const stageContainer = document.getElementById('story-stage-container');
